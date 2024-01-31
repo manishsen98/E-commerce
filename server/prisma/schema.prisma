@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User accounts and login
+model User {
+  id          Int      @id @unique @default(autoincrement())
+  name        String   @db.VarChar(50)
+  lastName    String   @db.VarChar(50)
+  phoneNumber Int
+  email       String
+  password    String
+  createdAt   DateTime @default(now())
+  updateAt    DateTime @updatedAt
+
+  // One-to-many relationships
+
+  @@map("users")
+}
+
+model Admin {
+  id        Int      @id @unique @default(autoincrement())
+  name      String   @db.VarChar(50)
+  email     String   @unique
+  password  String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
+
+  //one to many realtion
+  productsAdded   Product[]
+  categoriesAdded Category[]
+  variationAdded  VariationName[]
+}
+
+// Product information while listing (eg.  PETER England Shirt)
+model Product {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String
+  mainImg     String
+  createdAt   DateTime      @default(now())
+  updateAt    DateTime      @updatedAt
+  adminId     Int
+  admin       Admin         @relation(fields: [adminId], references: [id])
+  // Many-to-many relationships
+  category    Category[]
+  // One-to-many relationships
+  productItem ProductItem[]
+
+  @@map("products")
+}
+
+//
+model ProductItem {
+  id            Int             @id @unique @default(autoincrement())
+  productId     Int
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  stockQuantity Int
+  productImg    String[]
+  price         Float
+  isFeatured    Boolean         @default(false)
+  //many to  many realtion
+  variation     VariationName[]
+}
+
+// Product categories and subcategories
+model Category {
+  id          Int           @id @default(autoincrement())
+  name        String
+  adminId     Int
+  admin       Admin         @relation(fields: [adminId], references: [id])
+  // Many-to-many relationships
+  subcategory SubCategory[]
+  products    Product[]
+
+  @@map("categories")
+}
+
+model SubCategory {
+  id         Int      @id @default(autoincrement())
+  name       String
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("sub-categories")
+}
+
+// Product variations (e.g., color, size)
+model VariationName {
+  id             Int               @id @default(autoincrement())
+  tracking       String
+  adminId        Int
+  admin          Admin             @relation(fields: [adminId], references: [id])
+  varitionOption VariationOption[]
+  //many many realation
+  products       ProductItem[]
+
+  @@map("product_variations")
+}
+
+// Product variations option (e.g., red(#hexvalueofred) black(#hexvalueofred), S(size in cm) M(size in cm))
+model VariationOption {
+  id               Int           @id @default(autoincrement())
+  option           String
+  value            String
+  variationNametId Int
+  variationName    VariationName @relation(fields: [variationNametId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("product_variations_option")
+}
